@@ -119,15 +119,15 @@ repositories {
 static String getVersionFromWeb() {
     
     String[] urls = ["https://play.battlecode.org/versions/2022/version.txt"]
-    String version = null
-
+    String version = "2022.0.2.0"
+/*
     for (String url in urls) {
         try {
             version = new URL(url).text.trim()
             break
         } catch (Exception ex) {}
     }
-
+*/
     if (version == null) {
         throw new Exception("Couldn't find new version number. Connect to the internet or update your scaffold")
     }
