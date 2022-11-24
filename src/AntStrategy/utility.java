@@ -18,6 +18,18 @@ public class utility {
         return new MapLocation(rc.getMapWidth()/2, rc.getMapHeight()/2);
     }
     /**
+     * calculates probability of enemy appearing on a given square, takes in robotInfo array to save byteCode.
+     * @param rc
+     * @param loc
+     * @param inView 
+     * @return
+     */
+    public static Double enemyProbability(RobotController rc, MapLocation loc, RobotInfo[] inView){
+        Double P = 0.0; //assumption
+        for(int i = 0; i < inView.length; i++){
+        }
+    }
+    /**
      * gets direction adjacent to direction minus 30 degrees
      * @param Direction
      * @return

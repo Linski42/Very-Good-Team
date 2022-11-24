@@ -1,5 +1,6 @@
-package AntStrategy;
+package AntStrategy.Archon;
 
+import AntStrategy.utility;
 import battlecode.common.*;
 
 public class build {
