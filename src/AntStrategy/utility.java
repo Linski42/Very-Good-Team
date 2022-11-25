@@ -29,6 +29,7 @@ public class utility {
         for(int i = 0; i < inView.length; i++){
         }
     }
+
     /**
      * gets direction adjacent to direction minus 30 degrees
      * @param Direction

@@ -62,7 +62,28 @@ public strictfp class RobotPlayer {
     }
 
 
-    private static void runSage(RobotController rc) {
+    private static void runSage(RobotController rc) throws GameActionException {
+        //init{ //we only want this to be the case on first run
+        int unit = rc.readSharedArray(0); //gives an index for robot to reference
+        int chiefID = rc.readSharedArray(28+(unit*2));
+        //}
+        int targetID = rc.readSharedArray(29+(unit*2));
+        RobotInfo chiefInfo = rc.senseRobot(chiefID); //gets robot unit chief info from shared array
+
+        if(!rc.canSenseRobot(chiefID)){
+            RobotInfo targetInfo = rc.senseRobot(rc.readSharedArray(targetID));
+            RobotInfo[] inView = rc.senseNearbyRobots();
+        }
+        else {
+            MapLocation chiefPos = utility.deserializeMapLocation(rc.readSharedArray(30+(unit * 2)));
+            if(rc.canSenseRobot(targetID)){
+                rc.attack(rc.senseRobot(targetID).getLocation());
+                //TODO: Implement Sage Casting
+                rc.move(Pathing.getPath(utility.getRetreat(rc, chiefPos, targetPos)));
+            }else{
+                rc.move(Pathing.getPath(rc, chiefPos));
+            }
+        }
         
     }
 
@@ -76,7 +97,6 @@ public strictfp class RobotPlayer {
     int miner_number = 0;
     int soldier_number = 0;
     int idle_miner_number = 0;
-    double smoothed_income;
     static void runArchon(RobotController rc) throws GameActionException {
         /*
          * we should have some logic for pumping out defenders of archon
