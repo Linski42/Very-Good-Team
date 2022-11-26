@@ -19,17 +19,13 @@ public class Zone {
         this.enemyLoc = enemyLoc;
         this.centerLoc = centerLoc;
         Direction dir = centerLoc.directionTo(enemyLoc);
-        int dist = centerLoc.distanceSquaredTo(enemyLoc); 
-        //for(int i = dist; i<=34; i++){
-            //centerLoc.subtract(dir);
-        //}
         Direction ontwDir = utility.plus30(dir);
         Direction twthDir = dir.opposite();
         Direction thonDir = utility.minus30(dir);
         ontw = centerLoc.add(ontwDir);
         twth = centerLoc.add(twthDir);
         thon = centerLoc.add(thonDir);
-        for(int i = 0; i < unitSize*3; i++){ //creates 3 zones for tact rotations //TODO: Make more effective unitSize zone scale algorithm and make it based on enemy vis
+        for(int i = 0; i < unitSize*3; i++){  //TODO: Make more effective unitSize zone scale algorithm and make it based on enemy vis
             ontw = ontw.add(ontwDir);
             twth = twth.add(twthDir);
             thon = thon.add(thonDir);
@@ -104,5 +100,19 @@ public class Zone {
         }
         return zone;
     }
-    
+    public static MapLocation calculateCenter(MapLocation robotLocation, RobotInfo[] rInfo, RobotInfo target){//TODO: This just generally needs improvement
+        /*
+         make it so that when calculating this we switch target based on what position we can get into that's far from enemies
+         */
+        final int dist = (int) Math.sqrt(robotLocation.distanceSquaredTo(target.getLocation()));
+        Direction d = target.getLocation().directionTo(robotLocation);
+        MapLocation out = robotLocation;
+        for (int i = dist; i <= 8; i++) {//TODO: I actually need to do some non-trivial math to calculate what this point should be oh no
+            out = out.add(d);
+        }
+        return out;
+        //for(int i = dist; i<=34; i++){
+            //centerLoc.subtract(dir);
+        //}
     }
+}

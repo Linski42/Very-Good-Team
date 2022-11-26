@@ -100,7 +100,16 @@ public strictfp class RobotPlayer {
                             ri = rInfo[i];
                         }
                     }
-                    rc.writeSharedArray(29+(unit*2), minHP);
+                    for(int i = 29; i<31; i++){
+                        int v = utility.serializeRobotLocation(ri); //TODO: Make more bytecode efficient
+                        if(i == 30){
+                            v = ri.getID();
+                        }else if(i == 31){
+                            v = Zone.calculateCenter();
+                        }
+                        
+                        rc.writeSharedArray(i+(unit*2), v); //TODO: Make more bytecode efficient
+                    }
                 }
                 //rc.writeSharedArray(targetID, 29+unit*2);
                 //TODO: Implement Sage Casting
