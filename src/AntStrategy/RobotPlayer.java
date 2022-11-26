@@ -142,7 +142,7 @@ public strictfp class RobotPlayer {
         /*
          * we should have some logic for pumping out defenders of archon
          */
-        if (rc.getRoundNum() == ) {
+        if (rc.getRoundNum() < 50) {
             rc.setIndicatorString("Trying to build a miner");
             if (rc.canBuildRobot(RobotType.MINER, dir)) {
                 rc.buildRobot(RobotType.MINER, dir);
@@ -202,11 +202,7 @@ public strictfp class RobotPlayer {
         }
     }
 
-    /**
-     * Run a single turn for a Soldier.
-     * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
-     */
-    static void runSoldier(RobotController rc) throws GameActionException {
+    static void runSoldier(RobotController rc) throws GameActionException { //TODO: rewrite sage code for soldier
         // Try to attack someone
         int radius = rc.getType().actionRadiusSquared;
         Team opponent = rc.getTeam().opponent();
@@ -225,8 +221,25 @@ public strictfp class RobotPlayer {
             System.out.println("I moved!");
         }
     }
-    private static void runBuilder(RobotController rc) {
+    private static void runBuilder(RobotController rc) { //builders should update economic conditions in shared
+        String builderOrder = utility.deserializeCountAndOrder(rc.readSharedArray(10));//TODO: Fix
 
+        if(builderOrder == "BUILD"){
+            MapLocation targetLocation = utility.deserializeMapLocation(rc.readSharedArray(11));
+            if(targetLocation.isAdjacentTo(rc.getLocation())){
+                Direction dir = rc.getLocation().directionTo(targetLocation);
+                if(rc.canBuildRobot(RobotType.LABORATORY, dir)){
+                    rc.buildRobot(RobotType.LABORATORY, dir);
+                    int read = 0; 
+                    try{
+                        read = rc.readSharedArray(2);
+                    }catch(GameActionException e) {
+                        e.printStackTrace();
+                    }
+                    rc.writeSharedArray(2, read+1);
+                }
+            }
+        }
     }
 
     private static void runWatchtower(RobotController rc) {
