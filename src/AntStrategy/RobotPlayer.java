@@ -82,14 +82,14 @@ public strictfp class RobotPlayer {
         final Zone zone = new Zone(rc, targetLoc, centerLoc, targetVision, unitCount);
 
         final int zoneNumber = zone.getZone(thisLoc);
-        Direction moveDirection = Pathing.fromTo(rc, thisLoc, centerLoc);
+        MapLocation desiredPos = centerLoc;
 
         if(rc.canSenseRobot(targetID)){
                 RobotInfo targetInfo = rc.senseRobot(targetID);
-            if(zoneNumber == 1) { //in attack zone
 
                 rc.attack(targetInfo.getLocation()); //TODO: Research, can this do more than one action
 
+            if(zoneNumber == 1) { //in attack zone
                 if(!rc.canSenseRobot(targetID)){ //if target down 
                     RobotInfo[] rInfo = rc.senseNearbyRobots(); //TODO: Possible Optimization
                     int minHP = 500;
@@ -100,30 +100,32 @@ public strictfp class RobotPlayer {
                             ri = rInfo[i];
                         }
                     }
-                    for(int i = 29; i<31; i++){
-                        int v = utility.serializeRobotLocation(ri); //TODO: Make more bytecode efficient
+                    for(int i = 29; i<31; i++){ //update shared array with new targets
+                        int v = utility.serializeRobotLocation(ri);
                         if(i == 30){
                             v = ri.getID();
                         }else if(i == 31){
-                            v = Zone.calculateCenter();
+                            v = utility.serializeMapLocation(Zone.calculateCenter(thisLoc, rInfo, targetInfo));
                         }
-                        
-                        rc.writeSharedArray(i+(unit*2), v); //TODO: Make more bytecode efficient
+                        rc.writeSharedArray(i+(unit*2), v); 
                     }
                 }
-                //rc.writeSharedArray(targetID, 29+unit*2);
                 //TODO: Implement Sage Casting
-
-            }else {
-                //redecalare zone
+               desiredPos = zone.getLocationInZone(2);
+            }else { //recreate zones
+                    //run away
+                    //TODO: I want to play with this to see if it's too fidgety as is        
             }
-        }else{
+        }else {
+            switch(zoneNumber){ //if I can't find an enemy then either push up or rotate to the next zone
+                case 1: desiredPos = targetLoc; break; //TODO: this needs to be a lot more complex, kiting is what wins games
+                case 2: desiredPos = zone.getLocationInZone(3); break;
+                case 3: desiredPos = zone.getLocationInZone(1); break;//This could be optimized
+                default: desiredPos = centerLoc;
+            }
 
         }
-        // if(zoneNumber == -1 && !(thisLoc.equals(centerLoc))) {
-            // moveDirection.
-        // }
-        
+        rc.move(Path.goto(rc, desiredPos)); //TODO: Implement pathfinding
     }
 
 
