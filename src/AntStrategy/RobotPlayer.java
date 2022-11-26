@@ -1,6 +1,8 @@
 package AntStrategy;
 
 import battlecode.common.*;
+
+import java.util.Map;
 import java.util.Random;
 
 enum Strategy {
@@ -64,26 +66,54 @@ public strictfp class RobotPlayer {
 
     private static void runSage(RobotController rc) throws GameActionException {
         //init{ //we only want this to be the case on first run
-        int unit = rc.readSharedArray(0); //gives an index for robot to reference
-        int chiefID = rc.readSharedArray(28+(unit*2));
+        final int unit = rc.readSharedArray(0); //gives an index for robot to reference //TODO: find some way to cache this
+        final String[] countAndOrder = utility.deserializeCountAndOrder(rc.readSharedArray(28+(unit*2)));
+        final int unitCount = 8; //TODO: add in after deser is written
         //}
-        int targetID = rc.readSharedArray(29+(unit*2));
-        RobotInfo chiefInfo = rc.senseRobot(chiefID); //gets robot unit chief info from shared array
 
-        if(!rc.canSenseRobot(chiefID)){
-            RobotInfo targetInfo = rc.senseRobot(rc.readSharedArray(targetID));
-            RobotInfo[] inView = rc.senseNearbyRobots();
-        }
-        else {
-            MapLocation chiefPos = utility.deserializeMapLocation(rc.readSharedArray(30+(unit * 2)));
-            if(rc.canSenseRobot(targetID)){
-                rc.attack(rc.senseRobot(targetID).getLocation());
+        final MapLocation thisLoc = rc.getLocation();
+        final String[] eLS = utility.deserializeRobotLocation(rc.readSharedArray(29+(unit*2))); //2 layers of deserialization
+        final MapLocation targetLoc = new MapLocation(Integer.parseInt(eLS[0]), Integer.parseInt(eLS[1]));
+        final RobotType targetType = RobotType.valueOf(eLS[3]);
+        final int targetVision = targetType.actionRadiusSquared(); //TODO: Not sure why this isn't working
+        final int targetID = rc.readSharedArray(30+(unit*2));
+        final MapLocation centerLoc = utility.deserializeMapLocation(rc.readSharedArray(31+(unit * 2))); //location of center for Zone creation
+
+        final Zone zone = new Zone(rc, targetLoc, centerLoc, targetVision, unitCount);
+
+        final int zoneNumber = zone.getZone(thisLoc);
+        Direction moveDirection = Pathing.fromTo(rc, thisLoc, centerLoc);
+
+        if(rc.canSenseRobot(targetID)){
+                RobotInfo targetInfo = rc.senseRobot(targetID);
+            if(zoneNumber == 1) { //in attack zone
+
+                rc.attack(targetInfo.getLocation()); //TODO: Research, can this do more than one action
+
+                if(!rc.canSenseRobot(targetID)){ //if target down 
+                    RobotInfo[] rInfo = rc.senseNearbyRobots(); //TODO: Possible Optimization
+                    int minHP = 500;
+                    RobotInfo ri;
+                    for(int i = 0; i < rInfo.length; i++){
+                        if(rInfo[i].getHealth() < minHP){
+                            minHP = rInfo[i].getHealth();
+                            ri = rInfo[i];
+                        }
+                    }
+                    rc.writeSharedArray(29+(unit*2), minHP);
+                }
+                //rc.writeSharedArray(targetID, 29+unit*2);
                 //TODO: Implement Sage Casting
-                rc.move(Pathing.getPath(utility.getRetreat(rc, chiefPos, targetPos)));
-            }else{
-                rc.move(Pathing.getPath(rc, chiefPos));
+
+            }else {
+                //redecalare zone
             }
+        }else{
+
         }
+        // if(zoneNumber == -1 && !(thisLoc.equals(centerLoc))) {
+            // moveDirection.
+        // }
         
     }
 

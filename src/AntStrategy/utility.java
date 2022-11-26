@@ -1,4 +1,7 @@
 package AntStrategy;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+
 import battlecode.common.*;
 
 public class utility {
@@ -61,5 +64,14 @@ public class utility {
             }
         }
         return dir;
+    }
+    public static String[] deserializeRobotLocation(int serial){ //TODO: Is placeholder
+        String[] out = new String[3];
+        int x = 0;
+        int y = 0;
+        out[0] = (Integer.toString(x));
+        out[1] = (Integer.toString(y));
+        out[2] = ("ARCHON");
+        return out;
     }
 }
