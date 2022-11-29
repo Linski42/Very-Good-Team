@@ -102,6 +102,8 @@ public strictfp class RobotPlayer {
                     }
                     for(int i = 29; i<31; i++){ //update shared array with new targets
                         int v = utility.serializeRobotLocation(ri);
+                        
+
                         if(i == 30){
                             v = ri.getID();
                         }else if(i == 31){
