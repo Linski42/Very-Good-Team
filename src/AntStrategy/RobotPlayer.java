@@ -1,6 +1,7 @@
 package AntStrategy;
 
 import battlecode.common.*;
+import dijkstra.Path;
 
 import java.util.Map;
 import java.util.Random;
@@ -67,17 +68,18 @@ public strictfp class RobotPlayer {
     private static void runSage(RobotController rc) throws GameActionException {
         //init{ //we only want this to be the case on first run
         final int unit = rc.readSharedArray(0); //gives an index for robot to reference //TODO: find some way to cache this
-        final String[] countAndOrder = utility.deserializeCountAndOrder(rc.readSharedArray(28+(unit*2)));
+        //final String[] countAndOrder = utility.deserializeCountAndOrder(rc.readSharedArray(28+(unit*2)));TODO: Fix
         final int unitCount = 8; //TODO: add in after deser is written
         //}
 
         final MapLocation thisLoc = rc.getLocation();
-        final String[] eLS = utility.deserializeRobotLocation(rc.readSharedArray(29+(unit*2))); //2 layers of deserialization
-        final MapLocation targetLoc = new MapLocation(Integer.parseInt(eLS[0]), Integer.parseInt(eLS[1]));
-        final RobotType targetType = RobotType.valueOf(eLS[3]);
-        final int targetVision = targetType.actionRadiusSquared(); //TODO: Not sure why this isn't working
+        final int[] eLS = utility.deserializeRobotLocation(rc.readSharedArray(29+(unit*2))); //2 layers of deserialization
+        final MapLocation targetLoc = new MapLocation(eLS[0], eLS[1]);
+        final RobotType targetType = utility.robotTypeIntValue(eLS[3]);
+        final int targetVision = utility.getActionRadiusSquared(targetType, 0);
         final int targetID = rc.readSharedArray(30+(unit*2));
-        final MapLocation centerLoc = utility.deserializeMapLocation(rc.readSharedArray(31+(unit * 2))); //location of center for Zone creation
+        final int[] centerDe = utility.deserializeMapLocation(rc.readSharedArray(31+(unit * 2)));
+        final MapLocation centerLoc = new MapLocation(centerDe[0], centerDe[1]); //location of center for Zone creation
 
         final Zone zone = new Zone(rc, targetLoc, centerLoc, targetVision, unitCount);
 
@@ -107,7 +109,12 @@ public strictfp class RobotPlayer {
                         if(i == 30){
                             v = ri.getID();
                         }else if(i == 31){
-                            v = utility.serializeMapLocation(Zone.calculateCenter(thisLoc, rInfo, targetInfo));
+                            MapLocation newCent = Zone.calculateCenter(thisLoc, rInfo, targetInfo);
+                            int rub = 0;
+                            if(rc.canSenseLocation(newCent)){
+                                rub = rc.senseRubble(newCent);   
+                            }
+                            v = utility.serializeMapLocation(newCent, rub);
                         }
                         rc.writeSharedArray(i+(unit*2), v); 
                     }
@@ -161,7 +168,7 @@ public strictfp class RobotPlayer {
      * Run a single turn for a Miner.
      * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
      */
-    static void runMiner(RobotController rc, Strategy strat) throws GameActionException {
+    static void runMiner(RobotController rc) throws GameActionException {
         int followID = -1;
         // Try to mine on squares around us.
         for (int dx = -1; dx <= 1; dx++) {
@@ -224,7 +231,7 @@ public strictfp class RobotPlayer {
         }
     }
     private static void runBuilder(RobotController rc) { //builders should update economic conditions in shared
-        String builderOrder = utility.deserializeCountAndOrder(rc.readSharedArray(10));//TODO: Fix
+        //String builderOrder = utility.deserializeCountAndOrder(rc.readSharedArray(10));//TODO: Fix
 
         if(builderOrder == "BUILD"){
             MapLocation targetLocation = utility.deserializeMapLocation(rc.readSharedArray(11));

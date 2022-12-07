@@ -64,10 +64,16 @@ public class utility {
         }
         return dir;
     }
-    public static int[] deserializeRobotLocation(int serial){ 
+    //000101001010000
+    //101001010000
+   
+    
+  public static int[] deserializeRobotLocation(int serial){
         String str = Integer.toBinaryString(serial);
-        String xS = str.substring(1, 7);
-        String yS = str.substring(6, 12);
+        for (int i = str.length(); i < 16; i++) //this would be one line in python
+            str = "0" + str;
+
+        String xS = str.substring(1, 7); String yS = str.substring(7, 13);
         String type = str.substring(12);
         System.out.println(str);
         System.out.println(xS);
@@ -76,15 +82,15 @@ public class utility {
         int x = 0;
         int typeN = 0;
         for (int i = 0; i < 6; i++) {
-            if(i< 4 && type.charAt(i) == '1') {
-                typeN = typeN + (int)Math.pow(2, 14-i);
+            if(i < 4 && type.charAt(i) == '1') {
+                typeN = typeN + (int)Math.pow(2, 4-i);
             }
             if(xS.charAt(i) == '1') {
-                x = x + (int)Math.pow(2, 14-i);
+                x = x + (int)Math.pow(2, 5-i);
             }
             if(yS.charAt(i) == '1') {
-                y = y + (int)Math.pow(2, 14-i);
-            }
+                y = y + (int)Math.pow(2, 5-i);
+            } 
         }
         return new int[]{x, y, typeN};
     }
@@ -123,4 +129,81 @@ public class utility {
         System.out.println(out);
         return out;
     }
+
+    public static int serializeMapLocation(MapLocation m, int rubbleAmount) { //TODO: Figure out how much rubble we can actually have
+        String binS = Integer.toBinaryString(m.x);
+        for (int i = binS.length(); i < 6; i++) //this would be one line in python
+            binS = "0" + binS;
+
+        String yS = Integer.toBinaryString(m.y);
+        for (int i = yS.length(); i < 6; i++)
+            yS = "0" + yS;
+
+        String vNumber = Integer.toBinaryString(rubbleAmount); //TODO:This is going to break
+        System.out.println("y: " + yS);
+        System.out.println("x: " + binS);
+        System.out.println("type: " + vNumber);
+        binS = "0" + binS + yS + vNumber;
+        int out = 0;
+        for (int i = 0; i < 14; i++) {
+            if(binS.charAt(i) == '1') {
+                out = out + (int)Math.pow(2, 14-i);
+            }
+        }
+        System.out.println(out);
+        return out;
+    }
+  public static int[] deserializeMapLocation(int serial){
+        String str = Integer.toBinaryString(serial);
+        for (int i = str.length(); i < 16; i++) //this would be one line in python
+            str = "0" + str;
+
+        String xS = str.substring(1, 7); String yS = str.substring(7, 13);
+        String type = str.substring(12);
+        System.out.println(str);
+        System.out.println(xS);
+        System.out.println(yS);
+        int y = 0;
+        int x = 0;
+        int typeN = 0;
+        for (int i = 0; i < 6; i++) {
+            if(i < 4 && type.charAt(i) == '1') {
+                typeN = typeN + (int)Math.pow(2, 4-i);
+            }
+            if(xS.charAt(i) == '1') {
+                x = x + (int)Math.pow(2, 5-i);
+            }
+            if(yS.charAt(i) == '1') {
+                y = y + (int)Math.pow(2, 5-i);
+            } 
+        }
+        //TODO: Deserialize type
+        return new int[]{x, y, typeN};
+    }
+    public static RobotType robotTypeIntValue(int i) {
+        switch(i){
+            case 0: return RobotType.ARCHON;  
+            case 1: return RobotType.MINER;  
+            case 2: return RobotType.BUILDER;  
+            case 3: return RobotType.SOLDIER;  
+            case 4: return RobotType.SAGE;  
+            case 5: return RobotType.LABORATORY;  
+            case 6: return RobotType.WATCHTOWER;  
+        }
+        return RobotType.SAGE; //TODO: This could cause issues
+    }
+    public static int getActionRadiusSquared(RobotType targetType, int level) { //TODO: Figure out scaling for level
+        int vNumber = 6;
+        switch(targetType){
+            case WATCHTOWER:
+            case SAGE: vNumber = 34;  break;
+            case LABORATORY: vNumber = 0;  break;
+            default: vNumber = 20;  break;
+        }
+        return vNumber;
+    }
+    public static int[] deserializeCountAndOrder(int readSharedArray) {
+        return null;
+    }
+
 }
