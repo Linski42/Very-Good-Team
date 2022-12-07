@@ -15,6 +15,7 @@ public interface Path {
         Direction.WEST,
         Direction.NORTHWEST,
     };
+
     public static Direction goTo(RobotController rc, MapLocation pos){
         Direction out = rc.getLocation().directionTo(new MapLocation(0, 0));
         return out;

@@ -72,10 +72,10 @@ public strictfp class RobotPlayer {
         //}
 
         final MapLocation thisLoc = rc.getLocation();
-        final String[] eLS = utility.deserializeRobotLocation(rc.readSharedArray(29+(unit*2))); //2 layers of deserialization
-        final MapLocation targetLoc = new MapLocation(Integer.parseInt(eLS[0]), Integer.parseInt(eLS[1]));
-        final RobotType targetType = RobotType.valueOf(eLS[3]);
-        final int targetVision = targetType.actionRadiusSquared(); //TODO: Not sure why this isn't working
+        final int[] eLS = utility.deserializeRobotLocation(rc.readSharedArray(29+(unit*2))); //2 layers of deserialization
+        final MapLocation targetLoc = new MapLocation(eLS[0], eLS[1]);
+        final RobotType targetType = utility.robotTypeIntValue(eLS[3]);
+        final int targetVision = utility.getActionRadiusSquared(targetType, 0);
         final int targetID = rc.readSharedArray(30+(unit*2));
         final MapLocation centerLoc = utility.deserializeMapLocation(rc.readSharedArray(31+(unit * 2))); //location of center for Zone creation
 
