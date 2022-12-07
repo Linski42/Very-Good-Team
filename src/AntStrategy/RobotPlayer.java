@@ -67,7 +67,7 @@ public strictfp class RobotPlayer {
     private static void runSage(RobotController rc) throws GameActionException {
         //init{ //we only want this to be the case on first run
         final int unit = rc.readSharedArray(0); //gives an index for robot to reference //TODO: find some way to cache this
-        final String[] countAndOrder = utility.deserializeCountAndOrder(rc.readSharedArray(28+(unit*2)));
+        //final String[] countAndOrder = utility.deserializeCountAndOrder(rc.readSharedArray(28+(unit*2)));TODO: Fix
         final int unitCount = 8; //TODO: add in after deser is written
         //}
 
@@ -167,7 +167,7 @@ public strictfp class RobotPlayer {
      * Run a single turn for a Miner.
      * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
      */
-    static void runMiner(RobotController rc, Strategy strat) throws GameActionException {
+    static void runMiner(RobotController rc) throws GameActionException {
         int followID = -1;
         // Try to mine on squares around us.
         for (int dx = -1; dx <= 1; dx++) {
@@ -230,7 +230,7 @@ public strictfp class RobotPlayer {
         }
     }
     private static void runBuilder(RobotController rc) { //builders should update economic conditions in shared
-        String builderOrder = utility.deserializeCountAndOrder(rc.readSharedArray(10));//TODO: Fix
+        //String builderOrder = utility.deserializeCountAndOrder(rc.readSharedArray(10));//TODO: Fix
 
         if(builderOrder == "BUILD"){
             MapLocation targetLocation = utility.deserializeMapLocation(rc.readSharedArray(11));
