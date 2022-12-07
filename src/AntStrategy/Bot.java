@@ -6,7 +6,7 @@ enum strategy {
   LEADER,
   FOLLOWER
 }
-public interface Bot extends Runnable {
+public interface Bot {
     public abstract void run();
 
     public void setStrategy(strategy strat);
