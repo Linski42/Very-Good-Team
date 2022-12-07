@@ -1,4 +1,4 @@
-package AntStrategy;
+package dijkstra;
 
 import java.util.ArrayList;
 
