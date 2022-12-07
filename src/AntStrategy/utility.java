@@ -153,7 +153,33 @@ public class utility {
         System.out.println(out);
         return out;
     }
+  public static int[] deserializeMapLocation(int serial){
+        String str = Integer.toBinaryString(serial);
+        for (int i = str.length(); i < 16; i++) //this would be one line in python
+            str = "0" + str;
 
+        String xS = str.substring(1, 7); String yS = str.substring(7, 13);
+        String type = str.substring(12);
+        System.out.println(str);
+        System.out.println(xS);
+        System.out.println(yS);
+        int y = 0;
+        int x = 0;
+        int typeN = 0;
+        for (int i = 0; i < 6; i++) {
+            if(i < 4 && type.charAt(i) == '1') {
+                typeN = typeN + (int)Math.pow(2, 4-i);
+            }
+            if(xS.charAt(i) == '1') {
+                x = x + (int)Math.pow(2, 5-i);
+            }
+            if(yS.charAt(i) == '1') {
+                y = y + (int)Math.pow(2, 5-i);
+            } 
+        }
+        //TODO: Deserialize type
+        return new int[]{x, y, typeN};
+    }
     public static RobotType robotTypeIntValue(int i) {
         switch(i){
             case 0: return RobotType.ARCHON;  
@@ -176,4 +202,5 @@ public class utility {
         }
         return vNumber;
     }
+
 }

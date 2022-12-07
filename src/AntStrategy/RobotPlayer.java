@@ -77,7 +77,8 @@ public strictfp class RobotPlayer {
         final RobotType targetType = utility.robotTypeIntValue(eLS[3]);
         final int targetVision = utility.getActionRadiusSquared(targetType, 0);
         final int targetID = rc.readSharedArray(30+(unit*2));
-        final MapLocation centerLoc = utility.deserializeMapLocation(rc.readSharedArray(31+(unit * 2))); //location of center for Zone creation
+        final int[] centerDe = utility.deserializeMapLocation(rc.readSharedArray(31+(unit * 2)));
+        final MapLocation centerLoc = new MapLocation(centerDe[0], centerDe[1]); //location of center for Zone creation
 
         final Zone zone = new Zone(rc, targetLoc, centerLoc, targetVision, unitCount);
 
@@ -107,7 +108,12 @@ public strictfp class RobotPlayer {
                         if(i == 30){
                             v = ri.getID();
                         }else if(i == 31){
-                            v = utility.serializeMapLocation(Zone.calculateCenter(thisLoc, rInfo, targetInfo));
+                            MapLocation newCent = Zone.calculateCenter(thisLoc, rInfo, targetInfo);
+                            int rub = 0;
+                            if(rc.canSenseLocation(newCent)){
+                                rub = rc.senseRubble(newCent);   
+                            }
+                            v = utility.serializeMapLocation(newCent, rub);
                         }
                         rc.writeSharedArray(i+(unit*2), v); 
                     }
