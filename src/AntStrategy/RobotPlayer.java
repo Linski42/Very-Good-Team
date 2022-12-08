@@ -6,6 +6,9 @@ import dijkstra.Path;
 import java.util.Map;
 import java.util.Random;
 
+import AntStrategy.Archon.build;
+import AntStrategy.Economy.ideal;
+
 enum Strategy {
   LEADER,
   FOLLOWER
@@ -34,6 +37,7 @@ public strictfp class RobotPlayer {
      **/
     @SuppressWarnings("unused")
     public static void run(RobotController rc) throws GameActionException {
+
         System.out.println("I'm a " + rc.getType() + " and I just got created! I have health " + rc.getHealth());
         rc.setIndicatorString("Hello world!");
         while (true) {
@@ -143,25 +147,56 @@ public strictfp class RobotPlayer {
      * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
      */
  // Build Strategy
-    int income = 0;
-    int miner_number = 0;
-    int soldier_number = 0;
-    int idle_miner_number = 0;
     static void runArchon(RobotController rc) throws GameActionException {
-        /*
-         * we should have some logic for pumping out defenders of archon
-         */
-        if (rc.getRoundNum() < 50) {
-            rc.setIndicatorString("Trying to build a miner");
-            if (rc.canBuildRobot(RobotType.MINER, dir)) {
-                rc.buildRobot(RobotType.MINER, dir);
-            }
-        } else {
-            rc.setIndicatorString("Trying to build a soldier");
-            if (rc.canBuildRobot(RobotType.SOLDIER, dir)) {
-                rc.buildRobot(RobotType.SOLDIER, dir);
-            }
+        final int ideal_miner_number = 4;
+        final int ideal_soldier_number = 4;
+        final int ideal_lab_count = 2;
+        final MapLocation myLocation = rc.getLocation();
+        final int currentLabCount = rc.readSharedArray(2);
+        final int currentMinerNumber = rc.readSharedArray(3);
+        final int currentSageCount = rc.readSharedArray(30);
+        final RobotInfo[] nearby = rc.senseNearbyRobots();
+
+        int nearbyEnemyCount = 0;
+        RobotInfo[] nearbyEnemies = new RobotInfo[nearby.length];
+        for (int i = 0; i < nearby.length; i++) {
+          if(nearby[i].getTeam() != rc.getTeam()){nearbyEnemyCount++;}
         }
+        if(nearbyEnemyCount > 0){
+            Direction eDir = myLocation.directionTo(nearbyEnemies[0].getLocation());
+            build.tryBuild(rc, eDir, null);
+            if(rc.canMove(eDir.opposite()))
+                rc.move(eDir.opposite());
+        }
+
+
+        RobotInfo ri = null;
+            final int[] s = utility.deserializeMapLocation(rc.readSharedArray(8)); 
+            final MapLocation leadPos = new MapLocation(s[0], s[1]);
+        if (ideal_miner_number > currentMinerNumber) {
+            rc.setIndicatorString("Trying to build a miner");
+            rc.setIndicatorLine(myLocation, leadPos, 255, 0, 0);
+
+            ri = build.tryBuild(rc, myLocation.directionTo(leadPos), RobotType.MINER);
+        }else if(ideal_lab_count < currentLabCount){
+            ri = build.tryBuild(rc, myLocation.directionTo(new MapLocation(0, 0)), RobotType.BUILDER);
+        }
+         else {
+            rc.setIndicatorString("Trying to build a sage");
+            ri = build.tryBuild(rc, myLocation.directionTo(leadPos), RobotType.SAGE);
+        }
+
+        RobotInfo lowest = nearby[0];
+        for (int i = 0; i < nearby.length; i++) {
+            if(nearby[i].health<lowest.health){
+                lowest = nearby[i];
+            }
+
+        }
+        if(rc.canRepair(lowest.getLocation())){
+            rc.repair(lowest.getLocation());
+        }
+
     }
 
     /**

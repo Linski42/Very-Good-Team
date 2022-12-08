@@ -1,4 +1,4 @@
-package camel_case_v26.dijkstra;
+package dijkstra;
 
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;

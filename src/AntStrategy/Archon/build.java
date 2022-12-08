@@ -8,10 +8,6 @@ public class build {
     private int idealNumberLaboratories = 0;
     private int idealNumberSoldiers = 0;
     private int idealNumberSages = 0;
-    enum Strategy {
-      LEADER,
-      FOLLOWER
-    }
     static final Direction[] directions = {
         Direction.NORTH,
         Direction.NORTHEAST,
@@ -22,20 +18,7 @@ public class build {
         Direction.WEST,
         Direction.NORTHWEST,
     };
-    private 
-    public boolean build(RobotController rc){
-        int lead = rc.getTeamLeadAmount();
-        int gold = rc.getTeamGoldAmount();
-        int round = rc.getRoundNum();
-        // calculate greatest unit need 
-
-        
-        
-
-        return false;
-    }
-
-    public boolean buildEarlygame(RobotController rc){
+    public static  boolean buildEarlygame(RobotController rc){
         int round = rc.getRoundNum();
         //Direction to center, oft has resources
         Direction cDir = rc.getLocation().directionTo(utility.getMapCenter(rc));         
@@ -46,23 +29,23 @@ public class build {
 
         return false;
     }
-    public boolean tryBuild(Direction dir, RobotController rc, RobotType type, Strategy strat) throws GameActionException{
+    public static RobotInfo tryBuild(RobotController rc, Direction dir, RobotType type) throws GameActionException{
         int lead = rc.getTeamLeadAmount(rc.getTeam());
         int gold = rc.getTeamGoldAmount(rc.getTeam());
         if (lead < 40 && gold < 20)
             { //Can't build anything
-                return false;
+                return null;
+
             }
+        RobotInfo newRobot = null;
         MapLocation adjLocation = rc.adjacentLocation(dir);
         if(rc.canBuildRobot(type, dir))
             if(!rc.isLocationOccupied(adjLocation)){
                 rc.buildRobot(type, dir);
-                RobotInfo newRobot = rc.senseRobotAtLocation(adjLocation);
-                //writes shared with strategy for new robot
-                rc.writeSharedArray(0, utility.getAvailableLeader(rc).getID());
+                newRobot = rc.senseRobotAtLocation(adjLocation);
             }else{
-                return false;
+                return null;
             }
-        return true;
+        return newRobot;
     }
 }
