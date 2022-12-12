@@ -130,7 +130,7 @@ public class utility {
         return out;
     }
 
-    public static int serializeMapLocation(MapLocation m, int rubbleAmount) { //TODO: Figure out how much rubble we can actually have
+     public static int serializeMapLocation(MapLocation m, int rubbleAmount) { //TODO: Figure out how much rubble we can actually have
         String binS = Integer.toBinaryString(m.x);
         for (int i = binS.length(); i < 6; i++) //this would be one line in python
             binS = "0" + binS;
@@ -140,8 +140,9 @@ public class utility {
             yS = "0" + yS;
 
         String vNumber = Integer.toBinaryString(rubbleAmount); //TODO:This is going to break
-        System.out.println("y: " + yS);
+        
         System.out.println("x: " + binS);
+        System.out.println("y: " + yS);
         System.out.println("type: " + vNumber);
         binS = "0" + binS + yS + vNumber;
         int out = 0;
@@ -153,16 +154,16 @@ public class utility {
         System.out.println(out);
         return out;
     }
-  public static int[] deserializeMapLocation(int serial){
+ public static int[] deserializeMapLocation(int serial){
         String str = Integer.toBinaryString(serial);
         for (int i = str.length(); i < 16; i++) //this would be one line in python
             str = "0" + str;
 
-        String xS = str.substring(1, 7); String yS = str.substring(7, 13);
+        String xS = str.substring(2, 8); String yS = str.substring(8, 14);
         String type = str.substring(12);
         System.out.println(str);
-        System.out.println(xS);
-        System.out.println(yS);
+        System.out.println("x: " + xS);
+        System.out.println("y: " + yS);
         int y = 0;
         int x = 0;
         int typeN = 0;
@@ -180,6 +181,7 @@ public class utility {
         //TODO: Deserialize type
         return new int[]{x, y, typeN};
     }
+}
     public static RobotType robotTypeIntValue(int i) {
         switch(i){
             case 0: return RobotType.ARCHON;  

@@ -196,7 +196,6 @@ public strictfp class RobotPlayer {
         }
 
     }
-    
 
     static void runMiner(RobotController rc) throws GameActionException {
         final MapLocation myLocation = rc.getLocation();
@@ -236,7 +235,7 @@ public strictfp class RobotPlayer {
         MapLocation leadPos = new MapLocation(s[0], s[1]);
         rc.setIndicatorDot(leadPos, 0, 0, 255);
         rc.setIndicatorString("nothing to mine for or to move towards, sharedArray is: " + s[0] + ", "+ s[1]);
-        if(rc.canSenseLocation(leadPos) && !(rc.senseGold(leadPos)>0 ^ rc.senseLead(leadPos)>0)){
+        if(rc.canSenseLocation(leadPos) && !(rc.senseGold(leadPos)>0 || rc.senseLead(leadPos)>0)){
             rc.setIndicatorString("nothing at target");
             rc.writeSharedArray(8, -1); // if nothing at target position then rewrite the position in the array    
         }
