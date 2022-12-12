@@ -216,6 +216,7 @@ public strictfp class RobotPlayer {
             rc.move(dir);
         }else if(myLocation.isAdjacentTo(nearestResource)){
             rc.writeSharedArray(8, utility.serializeMapLocation(nearestResource, 0));
+            rc.setIndicatorString("currently mining");
             while (rc.canMineGold(nearestResource)) {
                 rc.mineGold(nearestResource);
             }
@@ -230,9 +231,11 @@ public strictfp class RobotPlayer {
         }catch(GameActionException e){
         }
         if(n != -1){
+            //serializatiion is broke
         final int[] s = utility.deserializeMapLocation(n); 
         MapLocation leadPos = new MapLocation(s[0], s[1]);
-            rc.setIndicatorString("something at target");
+        rc.setIndicatorDot(leadPos, 0, 0, 255);
+        rc.setIndicatorString("nothing to mine for or to move towards, sharedArray is: " + s[0] + ", "+ s[1]);
         if(rc.canSenseLocation(leadPos) && !(rc.senseGold(leadPos)>0 ^ rc.senseLead(leadPos)>0)){
             rc.setIndicatorString("nothing at target");
             rc.writeSharedArray(8, -1); // if nothing at target position then rewrite the position in the array    
