@@ -71,17 +71,17 @@ public strictfp class RobotPlayer {
     private static void runSage(RobotController rc) throws GameActionException {
         //init{ //we only want this to be the case on first run
         final int unit = rc.readSharedArray(0); //gives an index for robot to reference //TODO: find some way to cache this
-        //final String[] countAndOrder = utility.deserializeCountAndOrder(rc.readSharedArray(28+(unit*2)));TODO: Fix
+        //final String[] countAndOrder = Utility.deserializeCountAndOrder(rc.readSharedArray(28+(unit*2)));TODO: Fix
         final int unitCount = 8; //TODO: add in after deser is written
         //}
 
         final MapLocation thisLoc = rc.getLocation();
-        final int[] eLS = utility.deserializeRobotLocation(rc.readSharedArray(29+(unit*2))); //2 layers of deserialization
+        final int[] eLS = Utility.deserializeRobotLocation(rc.readSharedArray(29+(unit*2))); //2 layers of deserialization
         final MapLocation targetLoc = new MapLocation(eLS[0], eLS[1]);
-        final RobotType targetType = utility.robotTypeIntValue(eLS[3]);
-        final int targetVision = utility.getActionRadiusSquared(targetType, 0);
+        final RobotType targetType = Utility.robotTypeIntValue(eLS[3]);
+        final int targetVision = Utility.getActionRadiusSquared(targetType, 0);
         final int targetID = rc.readSharedArray(30+(unit*2));
-        final int[] centerDe = utility.deserializeMapLocation(rc.readSharedArray(31+(unit * 2)));
+        final int[] centerDe = Utility.deserializeMapLocation(rc.readSharedArray(31+(unit * 2)));
         final MapLocation centerLoc = new MapLocation(centerDe[0], centerDe[1]); //location of center for Zone creation
 
         final Zone zone = new Zone(rc, targetLoc, centerLoc, targetVision, unitCount);
@@ -106,7 +106,7 @@ public strictfp class RobotPlayer {
                         }
                     }
                     for(int i = 29; i<31; i++){ //update shared array with new targets
-                        int v = utility.serializeRobotLocation(ri);
+                        int v = Utility.serializeRobotLocation(ri);
                         
 
                         if(i == 30){
@@ -117,7 +117,7 @@ public strictfp class RobotPlayer {
                             if(rc.canSenseLocation(newCent)){
                                 rub = rc.senseRubble(newCent);   
                             }
-                            v = utility.serializeMapLocation(newCent, rub);
+                            v = Utility.serializeMapLocation(newCent, rub);
                         }
                         rc.writeSharedArray(i+(unit*2), v); 
                     }
@@ -169,7 +169,7 @@ public strictfp class RobotPlayer {
         }
 
         RobotInfo ri = null;
-            final int[] s = utility.deserializeMapLocation(rc.readSharedArray(8)); 
+            final int[] s = Utility.deserializeMapLocation(rc.readSharedArray(8)); 
             final MapLocation leadPos = new MapLocation(s[0], s[1]);
         if (ideal_miner_number > currentMinerNumber) {
             rc.setIndicatorString("Trying to build a miner");
@@ -201,9 +201,10 @@ public strictfp class RobotPlayer {
         final MapLocation myLocation = rc.getLocation();
         final MapLocation[] leadInSight = rc.senseNearbyLocationsWithLead(100);
         final MapLocation[] goldInSight = rc.senseNearbyLocationsWithLead(100);
+        if(leadInSight.length > 0 || goldInSight.length > 0){
+            
         final MapLocation[] rList = (goldInSight.length != 0 ? goldInSight : leadInSight);
         MapLocation nearestResource = rList[0];
-
         for (int i = 0; i < (rList.length); i++) {
             if(myLocation.distanceSquaredTo(rList[i]) < myLocation.distanceSquaredTo(nearestResource))
                 nearestResource = rList[i];
@@ -211,45 +212,54 @@ public strictfp class RobotPlayer {
 
         Direction dir = myLocation.directionTo(nearestResource);
         rc.setIndicatorLine(myLocation, nearestResource, 255, 0, 0);
+        if(rList.length > 2){
+            rc.writeSharedArray(8, Utility.serializeMapLocation(rList[2], 0));//write
+        }else{
+            rc.writeSharedArray(8, Utility.serializeMapLocation(nearestResource, 0));//write
+        }
+
         if(rc.canMove(dir) && !myLocation.isAdjacentTo(nearestResource)){
             rc.move(dir);
         }else if(myLocation.isAdjacentTo(nearestResource)){
-            rc.writeSharedArray(8, utility.serializeMapLocation(nearestResource, 0));
-            rc.setIndicatorString("currently mining");
+
+            rc.setIndicatorString("mining at: (" + nearestResource.x + ", " + nearestResource.y + ")");
+            rc.setIndicatorDot(nearestResource, 255, 255, 0);
             while (rc.canMineGold(nearestResource)) {
                 rc.mineGold(nearestResource);
             }
             while (rc.canMineLead(nearestResource)) {
                 rc.mineLead(nearestResource);
             }
-        }else{
+        }
+    }else{
             //TODO: Adjacency matrix to see if piece of lead is full
         int n = -1;
         try{
             n = rc.readSharedArray(8);
         }catch(GameActionException e){
         }
-        if(n != -1){
-            //serializatiion is broke
-        final int[] s = utility.deserializeMapLocation(n); 
-        MapLocation leadPos = new MapLocation(s[0], s[1]);
-        rc.setIndicatorDot(leadPos, 0, 0, 255);
-        rc.setIndicatorString("nothing to mine for or to move towards, sharedArray is: " + s[0] + ", "+ s[1]);
-        if(rc.canSenseLocation(leadPos) && !(rc.senseGold(leadPos)>0 || rc.senseLead(leadPos)>0)){
-            rc.setIndicatorString("nothing at target");
-            rc.writeSharedArray(8, -1); // if nothing at target position then rewrite the position in the array    
-        }
-        if(rc.canMove(myLocation.directionTo(leadPos))) {
-            rc.setIndicatorLine(myLocation, leadPos, 255, 0, 0);
-            rc.move(myLocation.directionTo(leadPos));
-        }
-        }else{
-            dir = directions[rng.nextInt(directions.length)];
-            rc.move(dir);
-        }
-    }
 
-    }
+        Direction dir = directions[rng.nextInt(directions.length)];
+        if(n != -1){
+        final int[] s = Utility.deserializeMapLocation(n); 
+        MapLocation leadPos = new MapLocation(s[0], s[1]);
+        rc.setIndicatorString("nothing nearby, sharedArray is: " + s[0] + ", "+ s[1]);
+        rc.setIndicatorDot(leadPos, 0, 255, 255);
+
+        // if nothing at target position then rewrite the position in the array    
+        if(rc.canSenseLocation(leadPos) && !(rc.senseGold(leadPos) > 0 || rc.senseLead(leadPos) > 0)){
+            rc.setIndicatorString("nothing at target");
+            rc.writeSharedArray(8, -1);
+        }else{
+            dir = myLocation.directionTo(leadPos); //this is new
+        }
+        }
+
+            if(rc.canMove(dir)) {
+                rc.move(dir);
+            }
+        }
+        }
 
     static void runSoldier(RobotController rc) throws GameActionException { //TODO: rewrite sage code for soldier
         // Try to attack someone
@@ -271,12 +281,12 @@ public strictfp class RobotPlayer {
         }
     }
     private static void runBuilder(RobotController rc) throws GameActionException { //builders should update economic conditions in shared
-        //String builderOrder = utility.deserializeCountAndOrder(rc.readSharedArray(10));//TODO: Fix
+        //String builderOrder = Utility.deserializeCountAndOrder(rc.readSharedArray(10));//TODO: Fix
         String builderOrder = "BUILD";
         if(builderOrder == "BUILD"){
             int[] p = null;
             try {
-                p = utility.deserializeMapLocation(rc.readSharedArray(11));
+                p = Utility.deserializeMapLocation(rc.readSharedArray(11));
             } catch (GameActionException e1) {
                 final Direction dir = directions[rng.nextInt(directions.length)];
                 if(rc.canBuildRobot(RobotType.LABORATORY, dir)){

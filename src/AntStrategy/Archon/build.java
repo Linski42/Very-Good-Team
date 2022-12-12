@@ -1,6 +1,6 @@
 package AntStrategy.Archon;
 
-import AntStrategy.utility;
+import AntStrategy.Utility;
 import battlecode.common.*;
 
 public class build {
@@ -21,7 +21,7 @@ public class build {
     public static  boolean buildEarlygame(RobotController rc){
         int round = rc.getRoundNum();
         //Direction to center, oft has resources
-        Direction cDir = rc.getLocation().directionTo(utility.getMapCenter(rc));         
+        Direction cDir = rc.getLocation().directionTo(Utility.getMapCenter(rc));         
         //start by sending out miners to locations adjacent to center
         if(round < 5){
             

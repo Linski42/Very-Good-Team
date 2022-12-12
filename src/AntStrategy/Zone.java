@@ -19,9 +19,9 @@ public class Zone {
         this.enemyLoc = enemyLoc;
         this.centerLoc = centerLoc;
         Direction dir = centerLoc.directionTo(enemyLoc);
-        Direction ontwDir = utility.plus30(dir);
+        Direction ontwDir = Utility.plus30(dir);
         Direction twthDir = dir.opposite();
-        Direction thonDir = utility.minus30(dir);
+        Direction thonDir = Utility.minus30(dir);
         ontw = centerLoc.add(ontwDir);
         twth = centerLoc.add(twthDir);
         thon = centerLoc.add(thonDir);

@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 import battlecode.common.*;
 
-public class utility {
+public class Utility {
 
     static final Direction[] directions = {
         Direction.NORTH,
@@ -181,7 +181,7 @@ public class utility {
         //TODO: Deserialize type
         return new int[]{x, y, typeN};
     }
-}
+
     public static RobotType robotTypeIntValue(int i) {
         switch(i){
             case 0: return RobotType.ARCHON;  
