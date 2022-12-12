@@ -15,7 +15,7 @@ enum Strategy {
 public strictfp class RobotPlayer {
     static int turnCount = 0;
 
-    static final Random rng = new Random(6147);
+    static final Random rng = new Random(6147 + turnCount);
     /** Array containing all the possible movement directions. */
     static final Direction[] directions = {
         Direction.NORTH,
@@ -168,7 +168,6 @@ public strictfp class RobotPlayer {
                 rc.move(eDir.opposite());
         }
 
-
         RobotInfo ri = null;
             final int[] s = utility.deserializeMapLocation(rc.readSharedArray(8)); 
             final MapLocation leadPos = new MapLocation(s[0], s[1]);
@@ -212,41 +211,41 @@ public strictfp class RobotPlayer {
         }
 
         Direction dir = myLocation.directionTo(nearestResource);
+        rc.setIndicatorLine(myLocation, nearestResource, 255, 0, 0);
         if(rc.canMove(dir) && !myLocation.isAdjacentTo(nearestResource)){
             rc.move(dir);
-        }else{
+        }else if(myLocation.isAdjacentTo(nearestResource)){
+            rc.writeSharedArray(8, utility.serializeMapLocation(nearestResource, 0));
             while (rc.canMineGold(nearestResource)) {
                 rc.mineGold(nearestResource);
-                rc.writeSharedArray(8, utility.serializeMapLocation(nearestResource, 0));
             }
-
             while (rc.canMineLead(nearestResource)) {
                 rc.mineLead(nearestResource);
-                rc.writeSharedArray(9, utility.serializeMapLocation(nearestResource, 0));
             }
-        }
+        }else{
             //TODO: Adjacency matrix to see if piece of lead is full
         int n = -1;
         try{
             n = rc.readSharedArray(8);
         }catch(GameActionException e){
-
-            try{
-                n = rc.readSharedArray(9);
-            }catch(GameActionException ee){
-        }
         }
         if(n != -1){
         final int[] s = utility.deserializeMapLocation(n); 
-        final MapLocation leadPos = new MapLocation(s[0], s[1]);
-
-        if(rc.canMove(myLocation.directionTo(leadPos))){
+        MapLocation leadPos = new MapLocation(s[0], s[1]);
+            rc.setIndicatorString("something at target");
+        if(rc.canSenseLocation(leadPos) && !(rc.senseGold(leadPos)>0 ^ rc.senseLead(leadPos)>0)){
+            rc.setIndicatorString("nothing at target");
+            rc.writeSharedArray(8, -1); // if nothing at target position then rewrite the position in the array    
+        }
+        if(rc.canMove(myLocation.directionTo(leadPos))) {
             rc.setIndicatorLine(myLocation, leadPos, 255, 0, 0);
             rc.move(myLocation.directionTo(leadPos));
         }
         }else{
+            dir = directions[rng.nextInt(directions.length)];
             rc.move(dir);
         }
+    }
 
     }
 
