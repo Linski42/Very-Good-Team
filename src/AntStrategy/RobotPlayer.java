@@ -147,7 +147,7 @@ public strictfp class RobotPlayer {
      */
  // Build Strategy
     static void runArchon(RobotController rc) throws GameActionException {
-        final int ideal_miner_number = 4;
+        final int ideal_miner_number = 5;
         final int ideal_soldier_number = 4;
         final int ideal_lab_count = 2;
         final MapLocation myLocation = rc.getLocation();
@@ -155,6 +155,7 @@ public strictfp class RobotPlayer {
         final int currentMinerNumber = rc.readSharedArray(3);
         final int currentSageCount = rc.readSharedArray(30);
         final RobotInfo[] nearby = rc.senseNearbyRobots();
+        final MapLocation mapCenter = Utility.getMapCenter(rc);
 
         int nearbyEnemyCount = 0;
         RobotInfo[] nearbyEnemies = new RobotInfo[nearby.length];
@@ -167,7 +168,6 @@ public strictfp class RobotPlayer {
             if(rc.canMove(eDir.opposite()))
                 rc.move(eDir.opposite());
         }
-
         RobotInfo ri = null;
             final int[] s = Utility.deserializeMapLocation(rc.readSharedArray(8)); 
             final MapLocation leadPos = new MapLocation(s[0], s[1]);
@@ -176,12 +176,14 @@ public strictfp class RobotPlayer {
             rc.setIndicatorLine(myLocation, leadPos, 255, 0, 0);
             ri = build.tryBuild(rc, myLocation.directionTo(leadPos), RobotType.MINER);
             rc.writeSharedArray(3, currentMinerNumber + 1);
-        }else if(ideal_lab_count < currentLabCount){
-            ri = build.tryBuild(rc, myLocation.directionTo(new MapLocation(0, 0)), RobotType.BUILDER);
+        }else if(ideal_lab_count > currentLabCount){
+            rc.setIndicatorString("Trying to build a builder");
+            //TODO: Fix this and make it work for labs instead of builders
+            ri = build.tryBuild(rc, myLocation.directionTo(mapCenter).opposite(), RobotType.BUILDER);
         }
          else {
             rc.setIndicatorString("Trying to build a sage");
-            ri = build.tryBuild(rc, myLocation.directionTo(leadPos), RobotType.SAGE);
+            ri = build.tryBuild(rc, myLocation.directionTo(mapCenter), RobotType.SAGE);
         }
 
         RobotInfo lowest = nearby[0];
@@ -202,8 +204,7 @@ public strictfp class RobotPlayer {
         final MapLocation[] leadInSight = rc.senseNearbyLocationsWithLead(100);
         final MapLocation[] goldInSight = rc.senseNearbyLocationsWithLead(100);
         if(leadInSight.length > 0 || goldInSight.length > 0){
-            
-        final MapLocation[] rList = (goldInSight.length != 0 ? goldInSight : leadInSight);
+        final MapLocation[] rList = (goldInSight.length > 0 ? goldInSight : leadInSight);
         MapLocation nearestResource = rList[0];
         for (int i = 0; i < (rList.length); i++) {
             if(myLocation.distanceSquaredTo(rList[i]) < myLocation.distanceSquaredTo(nearestResource))
@@ -241,18 +242,18 @@ public strictfp class RobotPlayer {
 
         Direction dir = directions[rng.nextInt(directions.length)];
         if(n != -1){
-        final int[] s = Utility.deserializeMapLocation(n); 
-        MapLocation leadPos = new MapLocation(s[0], s[1]);
-        rc.setIndicatorString("nothing nearby, sharedArray is: " + s[0] + ", "+ s[1]);
-        rc.setIndicatorDot(leadPos, 0, 255, 255);
+            final int[] s = Utility.deserializeMapLocation(n); 
+            MapLocation leadPos = new MapLocation(s[0], s[1]);
+            rc.setIndicatorString("nothing nearby, sharedArray is: " + s[0] + ", "+ s[1]);
+            rc.setIndicatorDot(leadPos, 0, 255, 255);
 
-        // if nothing at target position then rewrite the position in the array    
-        if(rc.canSenseLocation(leadPos) && !(rc.senseGold(leadPos) > 0 || rc.senseLead(leadPos) > 0)){
-            rc.setIndicatorString("nothing at target");
-            rc.writeSharedArray(8, -1);
-        }else{
-            dir = myLocation.directionTo(leadPos); //this is new
-        }
+            // if nothing at target position then rewrite the position in the array    
+            if(rc.canSenseLocation(leadPos) && !(rc.senseGold(leadPos) > 0 || rc.senseLead(leadPos) > 0)){
+                rc.setIndicatorString("nothing at target");
+                rc.writeSharedArray(8, -1);
+            }else{
+                dir = myLocation.directionTo(leadPos); //this is new
+            }
         }
 
             if(rc.canMove(dir)) {
@@ -282,24 +283,14 @@ public strictfp class RobotPlayer {
     }
     private static void runBuilder(RobotController rc) throws GameActionException { //builders should update economic conditions in shared
         //String builderOrder = Utility.deserializeCountAndOrder(rc.readSharedArray(10));//TODO: Fix
+        final int ideal_lab_count = 2;
         String builderOrder = "BUILD";
         if(builderOrder == "BUILD"){
-            int[] p = null;
-            try {
-                p = Utility.deserializeMapLocation(rc.readSharedArray(11));
-            } catch (GameActionException e1) {
-                final Direction dir = directions[rng.nextInt(directions.length)];
-                if(rc.canBuildRobot(RobotType.LABORATORY, dir)){
-                    rc.buildRobot(RobotType.LABORATORY, dir);
-                }
-                e1.printStackTrace();
-            }
-            assert p != null;
-            MapLocation targetLocation = new MapLocation(p[0], p[1]);             
-            if(targetLocation.isAdjacentTo(rc.getLocation())){
-                final Direction d = rc.getLocation().directionTo(targetLocation);
-                if(rc.canBuildRobot(RobotType.LABORATORY, d)){
-                    rc.buildRobot(RobotType.LABORATORY, d);
+            MapLocation mapCenter = Utility.getMapCenter(rc);             
+            final Direction d = rc.getLocation().directionTo(mapCenter).opposite();
+            if(!rc.canMove(d)){
+                    RobotInfo ri = build.tryBuild(rc, d, RobotType.LABORATORY);
+                    if(ri != null){
                     int read = 0; 
                     try{
                         read = rc.readSharedArray(2);
@@ -308,7 +299,10 @@ public strictfp class RobotPlayer {
                     }
                     rc.writeSharedArray(2, read+1);
                 }
+            }else{
+                rc.move(d);
             }
+
         }
      }
 

@@ -32,11 +32,6 @@ public class build {
     public static RobotInfo tryBuild(RobotController rc, Direction dir, RobotType type) throws GameActionException{
         int lead = rc.getTeamLeadAmount(rc.getTeam());
         int gold = rc.getTeamGoldAmount(rc.getTeam());
-        if (lead < 40)
-            { //Can't build anything
-                return null;
-
-            }
         RobotInfo newRobot = null;
         MapLocation adjLocation = rc.adjacentLocation(dir);
         if(rc.canBuildRobot(type, dir))
