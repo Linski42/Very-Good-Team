@@ -1,17 +1,20 @@
 package AntStrategy;
 
 import battlecode.common.*;
-import dijkstra.Path;
 
 import java.util.Map;
 import java.util.Random;
 
+import javax.lang.model.element.ModuleElement.DirectiveKind;
+
+import dijkstra.*;
 import AntStrategy.Archon.build;
 
 enum Strategy {
   LEADER,
   FOLLOWER
 }
+
 public strictfp class RobotPlayer {
     static int turnCount = 0;
 
@@ -42,15 +45,16 @@ public strictfp class RobotPlayer {
         while (true) {
             turnCount += 1;  // We have now been alive for one more turn!
             System.out.println("Age: " + turnCount + "; Location: " + rc.getLocation());
+            Dijkstra20 dijik = new Dijkstra20(rc);
             try {
                 switch (rc.getType()) {
-                    case ARCHON:     runArchon(rc);  break;
-                    case MINER:      runMiner(rc);   break;
-                    case SOLDIER:    runSoldier(rc); break;
+                    case ARCHON:     runArchon(rc, dijik);  break;
+                    case MINER:      runMiner(rc, dijik);   break;
+                    case SOLDIER:    runSoldier(rc, dijik); break;
                     case LABORATORY: runLaboratory(rc); break;
                     case WATCHTOWER: runWatchtower(rc); break;
                     case BUILDER:    runBuilder(rc); break;
-                    case SAGE:       runSage(rc); break;
+                    case SAGE:       runSage(rc, dijik); break;
                 }
             } catch (GameActionException e) {
                 System.out.println(rc.getType() + " Exception");
@@ -68,7 +72,7 @@ public strictfp class RobotPlayer {
     }
 
 
-    private static void runSage(RobotController rc) throws GameActionException {
+    private static void runSage(RobotController rc, Dijkstra dijik) throws GameActionException {
         //init{ //we only want this to be the case on first run
         final int unit = rc.readSharedArray(0); //gives an index for robot to reference //TODO: find some way to cache this
         //final String[] countAndOrder = Utility.deserializeCountAndOrder(rc.readSharedArray(28+(unit*2)));TODO: Fix
@@ -189,7 +193,8 @@ public strictfp class RobotPlayer {
         }
          else {
             rc.setIndicatorString("Trying to build a sage");
-            ri = build.buildSage(rc, myLocation.directionTo(mapCenter), RobotType.SAGE);
+            ri = build.tryBuild(rc, myLocation.directionTo(mapCenter), RobotType.SAGE);
+            //buildSage
         }
 
         RobotInfo lowest = nearby[0];
@@ -205,7 +210,7 @@ public strictfp class RobotPlayer {
 
     }
 
-    static void runMiner(RobotController rc) throws GameActionException {//TODO: Teach some miners to go to center map at the beginning of game
+    static void runMiner(RobotController rc, Dijkstra dijik) throws GameActionException {//TODO: Teach some miners to go to center map at the beginning of game
         if(rc.getHealth() <= 15){
             rc.writeSharedArray(3, rc.readSharedArray(3)-1);
         }

@@ -159,7 +159,8 @@ public class Utility {
         for (int i = str.length(); i < 16; i++) //this would be one line in python
             str = "0" + str;
 
-        String xS = str.substring(2, 8); String yS = str.substring(8, 14);
+        String xS = str.substring(2, 8);
+        String yS = str.substring(8, 14);
         String type = str.substring(12);
         System.out.println(str);
         System.out.println("x: " + xS);
