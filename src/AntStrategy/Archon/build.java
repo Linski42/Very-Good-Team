@@ -43,4 +43,20 @@ public class build {
             }
         return newRobot;
     }
+    public final int requestsChannel = 0;
+    public final int unitOne = 30;
+    public final int unitTwo = 45;
+    public final int unitThree = 60;
+    public static RobotInfo buildSage(RobotController rc, Direction directionTo, RobotType sage) {
+        //34 - 44
+        /*
+         * should check for units that need more sages
+         * then set one of the sharedarray slots to the robot id of this new robot
+         * and create new unit info if unit is missing
+         * change index slot 0 to a requests channel 
+         */
+        for (int index = 0; index < array.length; index++) {
+            
+        }
+    }
 }

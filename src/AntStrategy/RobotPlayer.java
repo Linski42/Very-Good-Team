@@ -91,7 +91,6 @@ public strictfp class RobotPlayer {
 
         if(rc.canSenseRobot(targetID)){
                 RobotInfo targetInfo = rc.senseRobot(targetID);
-
                 rc.attack(targetInfo.getLocation()); //TODO: Research, can this do more than one action
 
             if(zoneNumber == 1) { //in attack zone
@@ -105,6 +104,7 @@ public strictfp class RobotPlayer {
                             ri = rInfo[i];
                         }
                     }
+
                     for(int i = 29; i<31; i++){ //update shared array with new targets
                         int v = Utility.serializeRobotLocation(ri);
                         
@@ -189,7 +189,7 @@ public strictfp class RobotPlayer {
         }
          else {
             rc.setIndicatorString("Trying to build a sage");
-            ri = build.tryBuild(rc, myLocation.directionTo(mapCenter), RobotType.SAGE);
+            ri = build.buildSage(rc, myLocation.directionTo(mapCenter), RobotType.SAGE);
         }
 
         RobotInfo lowest = nearby[0];
@@ -205,7 +205,10 @@ public strictfp class RobotPlayer {
 
     }
 
-    static void runMiner(RobotController rc) throws GameActionException {
+    static void runMiner(RobotController rc) throws GameActionException {//TODO: Teach some miners to go to center map at the beginning of game
+        if(rc.getHealth() <= 15){
+            rc.writeSharedArray(3, rc.readSharedArray(3)-1);
+        }
         final MapLocation myLocation = rc.getLocation();
         final MapLocation[] leadInSight = rc.senseNearbyLocationsWithLead(100);
         final MapLocation[] goldInSight = rc.senseNearbyLocationsWithLead(100);
