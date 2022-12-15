@@ -87,15 +87,29 @@ public strictfp class RobotPlayer {
         }
         final int unitCount = rc.readSharedArray(15 + (unit * 15)); 
         final MapLocation thisLoc = rc.getLocation();
-        final int[] eLS = Utility.deserializeRobotLocation(rc.readSharedArray(16+(unit*15))); //2 layers of deserialization
-        final int targetID = rc.readSharedArray(17+(unit*15));
-        final int[] centerDe = Utility.deserializeMapLocation(rc.readSharedArray(18+(unit * 15)));
+        int[] eLS = new int[2];  //2 layers of deserialization
+        try{
+            eLS = Utility.deserializeRobotLocation(rc.readSharedArray(16+(unit*15)));
+        }catch(GameActionException e){
+
+        }
+        int targetID = 0;
+        try{
+            targetID = rc.readSharedArray(17+(unit*15));
+        }catch(GameActionException e){
+
+        }
+        int[] centerDe = new int[]{rc.getMapWidth()/2, rc.getMapHeight()/2};
+        try{
+            centerDe = Utility.deserializeMapLocation(rc.readSharedArray(18+(unit * 15)));
+        }catch(GameActionException e){ }
+
         final MapLocation targetLoc = new MapLocation(eLS[0], eLS[1]);
         final RobotType targetType = Utility.robotTypeIntValue(eLS[3]);
         final int targetVision = Utility.getActionRadiusSquared(targetType, 0);
         final MapLocation centerLoc = new MapLocation(centerDe[0], centerDe[1]); //location of center for Zone creation
 
-        final Zone zone = new Zone(rc, targetLoc, centerLoc, targetVision, unitCount);
+        Zone zone = new Zone(rc, targetLoc, centerLoc, targetVision, unitCount);
 
         final int zoneNumber = zone.getZone(thisLoc);
         MapLocation desiredPos = centerLoc;
@@ -115,27 +129,33 @@ public strictfp class RobotPlayer {
                             ri = rInfo[i];
                         }
                     }
-                    int sPos = 15 + (15*unit);
+                    int sPos = 15 + (15*unit); //TODO: Make sure all of this works
                     rc.writeSharedArray(sPos+1, Utility.serializeRobotLocation(ri));
                     rc.writeSharedArray(sPos+2, ri.getID());
-                    for(int i = 15 + (15*unit); i <= 11 + (15*unit); i++){ //update shared array with new targets
-                        if(i == 30){
-                            v = ri.getID();
-                        }else if(i == 31){
-                            MapLocation newCent = Zone.calculateCenter(thisLoc, rInfo, targetInfo);
-                            int rub = 0;
-                            if(rc.canSenseLocation(newCent)){
-                                rub = rc.senseRubble(newCent);   
-                            }
-                            v = Utility.serializeMapLocation(newCent, rub);
-                        }
-                        rc.writeSharedArray(i+(unit*2), v); 
+                    MapLocation newCent = Zone.calculateCenter(thisLoc, rInfo, targetInfo);
+                    int rub = 0;
+                    if(rc.canSenseLocation(newCent)){
+                        rub = rc.senseRubble(newCent);   
                     }
-                    rc.writeSharedArray(idIndex, minHP);
-                }
+                        rc.writeSharedArray(sPos+3, Utility.serializeMapLocation(newCent, rub));
+                    }
                 //TODO: Implement Sage Casting
                desiredPos = zone.getLocationInZone(2);
             }else { //recreate zones
+                final RobotInfo ti = rc.senseRobot(targetID);
+                rc.attack(ti.getLocation()); 
+                RobotInfo[] rInfo = rc.senseNearbyRobots();
+                int minHP = 500;
+                RobotInfo info = null;
+                zone = new Zone(rc, ti.getLocation(), thisLoc, 6, unitCount);
+                for(int i = 0; i < rInfo.length; i++){
+                    if(rInfo[i].getHealth() < minHP){
+                        minHP = rInfo[i].getHealth();
+                        info = rInfo[i];
+                    }
+                }
+                MapLocation newCent = Zone.calculateCenter(thisLoc, rInfo, ti);
+                rc.writeSharedArray(18+(15*unit),Utility.serializeMapLocation(newCent, 0));
                     //run away
                     //TODO: I want to play with this to see if it's too fidgety as is        
             }
