@@ -2,10 +2,10 @@ package AntStrategy;
 
 import battlecode.common.*;
 
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Random;
 
-import javax.lang.model.element.ModuleElement.DirectiveKind;
 
 import dijkstra.*;
 import AntStrategy.Archon.build;
@@ -53,7 +53,7 @@ public strictfp class RobotPlayer {
                     case SOLDIER:    runSoldier(rc, dijik); break;
                     case LABORATORY: runLaboratory(rc); break;
                     case WATCHTOWER: runWatchtower(rc); break;
-                    case BUILDER:    runBuilder(rc); break;
+                    case BUILDER:    runBuilder(rc, dijik); break;
                     case SAGE:       runSage(rc, dijik); break;
                 }
             } catch (GameActionException e) {
@@ -74,18 +74,25 @@ public strictfp class RobotPlayer {
 
     private static void runSage(RobotController rc, Dijkstra dijik) throws GameActionException {
         //init{ //we only want this to be the case on first run
-        final int unit = rc.readSharedArray(0); //gives an index for robot to reference //TODO: find some way to cache this
-        //final String[] countAndOrder = Utility.deserializeCountAndOrder(rc.readSharedArray(28+(unit*2)));TODO: Fix
-        final int unitCount = 8; //TODO: add in after deser is written
-        //}
-
+        final int[] idIndexN = Utility.getSageIndex(rc); //gives an index for robot to reference //TODO: find some way to cache this
+        final int idIndex = idIndexN[0];
+        final int unit = idIndexN[1];
+        if(idIndex == -1){
+           RobotInfo[] rInfo = rc.senseNearbyRobots(); //TODO: Possible Optimization
+           for (int i = 0; i < rInfo.length; i++) {
+                if(rInfo[i].getTeam() != rc.getTeam() && rc.canAttack(rInfo[i].getLocation())){
+                    rc.attack(rInfo[i].getLocation());
+                }
+           }
+        }
+        final int unitCount = rc.readSharedArray(15 + (unit * 15)); 
         final MapLocation thisLoc = rc.getLocation();
-        final int[] eLS = Utility.deserializeRobotLocation(rc.readSharedArray(29+(unit*2))); //2 layers of deserialization
+        final int[] eLS = Utility.deserializeRobotLocation(rc.readSharedArray(16+(unit*15))); //2 layers of deserialization
+        final int targetID = rc.readSharedArray(17+(unit*15));
+        final int[] centerDe = Utility.deserializeMapLocation(rc.readSharedArray(18+(unit * 15)));
         final MapLocation targetLoc = new MapLocation(eLS[0], eLS[1]);
         final RobotType targetType = Utility.robotTypeIntValue(eLS[3]);
         final int targetVision = Utility.getActionRadiusSquared(targetType, 0);
-        final int targetID = rc.readSharedArray(30+(unit*2));
-        final int[] centerDe = Utility.deserializeMapLocation(rc.readSharedArray(31+(unit * 2)));
         final MapLocation centerLoc = new MapLocation(centerDe[0], centerDe[1]); //location of center for Zone creation
 
         final Zone zone = new Zone(rc, targetLoc, centerLoc, targetVision, unitCount);
@@ -108,11 +115,10 @@ public strictfp class RobotPlayer {
                             ri = rInfo[i];
                         }
                     }
-
-                    for(int i = 29; i<31; i++){ //update shared array with new targets
-                        int v = Utility.serializeRobotLocation(ri);
-                        
-
+                    int sPos = 15 + (15*unit);
+                    rc.writeSharedArray(sPos+1, Utility.serializeRobotLocation(ri));
+                    rc.writeSharedArray(sPos+2, ri.getID());
+                    for(int i = 15 + (15*unit); i <= 11 + (15*unit); i++){ //update shared array with new targets
                         if(i == 30){
                             v = ri.getID();
                         }else if(i == 31){
@@ -125,6 +131,7 @@ public strictfp class RobotPlayer {
                         }
                         rc.writeSharedArray(i+(unit*2), v); 
                     }
+                    rc.writeSharedArray(idIndex, minHP);
                 }
                 //TODO: Implement Sage Casting
                desiredPos = zone.getLocationInZone(2);
@@ -141,7 +148,11 @@ public strictfp class RobotPlayer {
             }
 
         }
-        rc.move(thisLoc.directionTo(desiredPos)); //TODO: Implement pathfinding
+        if(rc.canMove(thisLoc.directionTo(desiredPos))){
+            rc.move(thisLoc.directionTo(desiredPos));
+        }else{
+            rc.move(dijik.getBestDirection(desiredPos, thisLoc.directionTo(desiredPos)));
+        }
     }
 
 
@@ -150,15 +161,12 @@ public strictfp class RobotPlayer {
      * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
      */
  // Build Strategy
-    static void runArchon(RobotController rc) throws GameActionException {
-        final int ideal_miner_number = 3*rc.getArchonCount();
-        final int ideal_builder_number = rc.getArchonCount();
-        final int ideal_soldier_number = 4;
-        final int ideal_lab_count = 2;
+    static void runArchon(RobotController rc, Dijkstra dijik) throws GameActionException {
+        final int ideal_miner_number = build.getIdealNumMiners(rc);
+        final int ideal_builder_number = build.getIdealNumBuilders(rc);
+        final int ideal_soldier_number = build.getIdealNumSoldiers(rc);
         final MapLocation myLocation = rc.getLocation();
-        final int currentLabCount = rc.readSharedArray(2);
         final int currentMinerNumber = rc.readSharedArray(3);
-        final int currentSageCount = rc.readSharedArray(30);
         final int currentBuilderNumber = rc.readSharedArray(4);
         final RobotInfo[] nearby = rc.senseNearbyRobots();
         final MapLocation mapCenter = Utility.getMapCenter(rc);
@@ -193,7 +201,7 @@ public strictfp class RobotPlayer {
         }
          else {
             rc.setIndicatorString("Trying to build a sage");
-            ri = build.tryBuild(rc, myLocation.directionTo(mapCenter), RobotType.SAGE);
+            ri = build.buildSage(rc, myLocation.directionTo(mapCenter));
             //buildSage
         }
 
@@ -224,7 +232,6 @@ public strictfp class RobotPlayer {
             if(myLocation.distanceSquaredTo(rList[i]) < myLocation.distanceSquaredTo(nearestResource))
                 nearestResource = rList[i];
         }
-
         Direction dir = myLocation.directionTo(nearestResource);
         rc.setIndicatorLine(myLocation, nearestResource, 255, 0, 0);
         if(rList.length > 1){
@@ -233,10 +240,15 @@ public strictfp class RobotPlayer {
             rc.writeSharedArray(8, Utility.serializeMapLocation(rList[0], 0));//write
         }
 
-        if(rc.canMove(dir) && !myLocation.isAdjacentTo(nearestResource)){
-            rc.move(dir);
-        }else if(myLocation.isAdjacentTo(nearestResource)){
+        if(!myLocation.isAdjacentTo(nearestResource)){
 
+            if(rc.canMove(dir)){
+                rc.move(dir);
+            }else{
+                dir = dijik.getBestDirection(nearestResource, dir);
+                rc.move(dir);
+            }
+        }else if(myLocation.isAdjacentTo(nearestResource)){
             rc.setIndicatorString("mining at: (" + nearestResource.x + ", " + nearestResource.y + ")");
             rc.setIndicatorDot(nearestResource, 255, 255, 0);
             while (rc.canMineGold(nearestResource)) {
@@ -267,20 +279,19 @@ public strictfp class RobotPlayer {
                 rc.writeSharedArray(8, 0);
             }else{
                 dir = myLocation.directionTo(leadPos); //this is new
+                dir = rc.canMove(dir) ? dir : dijik.getBestDirection(leadPos, dir);
             }
         }else{
           dir = myLocation.directionTo(Utility.getMapCenter(rc));
+          dir = rc.canMove(dir) ? dir : dijik.getBestDirection(Utility.getMapCenter(rc), dir);
         }
             if(rc.canMove(dir)) {
                 rc.move(dir);
-            }else{
-                rc.setIndicatorString("moving randomly");
-                rc.move(directions[rng.nextInt(directions.length)]);
             }
         }
-        }
+    }
 
-    static void runSoldier(RobotController rc) throws GameActionException { //TODO: rewrite sage code for soldier
+    static void runSoldier(RobotController rc, Dijkstra dijik) throws GameActionException { //TODO: rewrite sage code for soldier
         // Try to attack someone
         int radius = rc.getType().actionRadiusSquared;
         Team opponent = rc.getTeam().opponent();
@@ -299,26 +310,30 @@ public strictfp class RobotPlayer {
             System.out.println("I moved!");
         }
     }
-    private static void runBuilder(RobotController rc) throws GameActionException { //builders should update economic conditions in shared
-        //String builderOrder = Utility.deserializeCountAndOrder(rc.readSharedArray(10));//TODO: Fix
-        final int ideal_lab_count = 3;
-        String builderOrder = "BUILD";
+    private static void runBuilder(RobotController rc, Dijkstra dijik) throws GameActionException { //builders should update economic conditions in shared
         int labCount = 0; 
         try{
             labCount = rc.readSharedArray(2);
         }catch(GameActionException e) {
             e.printStackTrace();
         }
-        if(builderOrder == "BUILD"){
+        final MapLocation myLocation = rc.getLocation();
+        final int ideal_lab_number = build.getIdealNumLabs(rc);
+        final int currentLabNumber = rc.readSharedArray(2);
+        if(ideal_lab_number > labCount){
             MapLocation mapCenter = Utility.getMapCenter(rc);             
-            Direction d = rc.getLocation().directionTo(mapCenter).opposite();
+            Direction d = rc.getLocation().directionTo(mapCenter).opposite(); //TODO: Maybe get a better position
             final RobotInfo[] nearbyList = rc.senseNearbyRobots();
             RobotInfo t = null;
+            LinkedList<MapLocation> blockedLocations = new LinkedList<MapLocation>();
             for (int i = 0; i < nearbyList.length; i++) {
                 if(nearbyList[i].getType() == RobotType.LABORATORY && nearbyList[i].getHealth() < 100){
                     if(rc.canRepair(nearbyList[i].getLocation())){
                         t = nearbyList[i];
                     }
+                }
+                if(nearbyList[i].getLocation().isAdjacentTo(myLocation)){
+                    blockedLocations.add(nearbyList[i].getLocation());
                 }
             }
             if(t != null){
@@ -326,18 +341,24 @@ public strictfp class RobotPlayer {
                     rc.repair(t.getLocation());
                 }
             }
-            if(!rc.canMove(d)){
 
+            if(blockedLocations.size() > 4){
+                rc.move(dijik.getBestDirection(new MapLocation(0, 0), myLocation.directionTo(blockedLocations.get(0))));
+            }
+
+            if(!rc.canMove(d)){
                 if(!rc.onTheMap(rc.adjacentLocation(d))){
                 rc.setIndicatorString("cannot move in direction");
-                if(labCount < ideal_lab_count){
+                if(labCount < ideal_lab_number){
                     while(!rc.canBuildRobot(RobotType.LABORATORY, d))
                         d = d.rotateLeft();
+                    
                     RobotInfo ri = build.tryBuild(rc, d, RobotType.LABORATORY);
                     
                     if(ri != null)
                         rc.writeSharedArray(2, labCount+1);
                 }else{
+
                 }
             }
             }else{
@@ -352,8 +373,9 @@ public strictfp class RobotPlayer {
     }
 
     private static void runLaboratory(RobotController rc) throws GameActionException {
-        if(rc.canTransmute()){//TODO: Add more conditions or read from archon in shared array
-            rc.transmute();
+            while(rc.canTransmute() && rc.isActionReady()){
+                rc.transmute();
+                rc.setIndicatorString(String.valueOf(rc.getTransmutationRate()));
         }
     }
 }

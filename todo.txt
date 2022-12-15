@@ -1,0 +1,5 @@
+ * Fix todos
+ * get miners to transmit enemy positions and sages to go to enemy positions out of back 40 in shared
+ - * get Archon to dynamically adjust unit values
+ * fix soldier code 
+ * add anomolies for sages

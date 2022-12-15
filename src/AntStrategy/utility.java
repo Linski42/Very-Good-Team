@@ -208,5 +208,30 @@ public class Utility {
     public static int[] deserializeCountAndOrder(int readSharedArray) {
         return null;
     }
+    public static int[] getSageIndex(RobotController rc) {
+        int id = rc.getID();
+        for (int i = 1; i <= 3; i++) {
+
+            final int UAP = 15 + (i*15); //unit array position
+            int j = UAP + 3;
+            int val = -1;
+            while (val != id) {//finds sage's group index 
+                if(!(j < 15 || (i == 3 && j < 20))){
+                    break;
+                }
+                j++;
+                try{
+                    val = rc.readSharedArray(j);
+                }catch(GameActionException e){
+                    val = -1;
+                }
+            }
+            if(val == id){ //TODO: This probably does not work
+                return new int[]{j, i};
+            }
+
+        }
+        return new int[]{-1, -1};
+    }
 
 }
