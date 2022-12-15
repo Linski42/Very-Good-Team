@@ -107,7 +107,7 @@ public class Zone {
         final int dist = (int) Math.sqrt(robotLocation.distanceSquaredTo(target.getLocation()));
         Direction d = target.getLocation().directionTo(robotLocation);
         MapLocation out = robotLocation;
-        for (int i = dist; i <= 8; i++) {//TODO: I actually need to do some non-trivial math to calculate what this point should be oh no
+        for (int i = dist; i <= 6; i++) {//TODO: I actually need to do some non-trivial math to calculate what this point should be oh no
             out = out.add(d);
         }
         return out;

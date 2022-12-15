@@ -73,36 +73,46 @@ public strictfp class RobotPlayer {
 
 
     private static void runSage(RobotController rc, Dijkstra dijik) throws GameActionException {
+        int ind = 0;
         //init{ //we only want this to be the case on first run
         final int[] idIndexN = Utility.getSageIndex(rc); //gives an index for robot to reference //TODO: find some way to cache this
         final int idIndex = idIndexN[0];
         final int unit = idIndexN[1];
         if(idIndex == -1){
-           RobotInfo[] rInfo = rc.senseNearbyRobots(); //TODO: Possible Optimization
+           RobotInfo[] rInfo = rc.senseNearbyRobots();
            for (int i = 0; i < rInfo.length; i++) {
                 if(rInfo[i].getTeam() != rc.getTeam() && rc.canAttack(rInfo[i].getLocation())){
                     rc.attack(rInfo[i].getLocation());
                 }
            }
         }
+
         final int unitCount = rc.readSharedArray(15 + (unit * 15)); 
         final MapLocation thisLoc = rc.getLocation();
         int[] eLS = new int[2];  //2 layers of deserialization
         MapLocation targetLoc = Utility.getMapCenter(rc);
         RobotType targetType = RobotType.SAGE;
+        rc.setIndicatorString(String.valueOf(++ind));//1
+        MapLocation[] LOOT = rc.senseNearbyLocationsWithLead(unitCount);
+        if(LOOT.length > 0){
+            rc.writeSharedArray(8, Utility.serializeMapLocation(LOOT[0], 0));
+        }
         try{
             eLS = Utility.deserializeRobotLocation(rc.readSharedArray(16+(unit*15)));
             targetLoc = new MapLocation(eLS[0], eLS[1]);
-            targetType = Utility.robotTypeIntValue(eLS[3]);
         }catch(GameActionException e){
-
+            rc.setIndicatorString(e.getMessage());
         }
+        
+        rc.setIndicatorString(String.valueOf(++ind));//2
         int targetID = 0;
         try{
             targetID = rc.readSharedArray(17+(unit*15));
         }catch(GameActionException e){
 
         }
+
+        rc.setIndicatorString(String.valueOf(++ind));
         int[] centerDe = new int[]{rc.getMapWidth()/2, rc.getMapHeight()/2};
         MapLocation centerLoc = Utility.getMapCenter(rc); //location of center for Zone creation
         boolean hasCenter = true;
@@ -112,17 +122,21 @@ public strictfp class RobotPlayer {
         }catch(GameActionException e){
             hasCenter = false;
          }
+        rc.setIndicatorString(String.valueOf(++ind));
         final int targetVision = 6;
         Zone zone = new Zone(rc, targetLoc, centerLoc, targetVision, unitCount);
         final int zoneNumber = zone.getZone(thisLoc);
         MapLocation desiredPos = centerLoc;
+        rc.setIndicatorString(String.valueOf(++ind));
         if(hasCenter){
-        if(rc.canSenseRobot(targetID)){
+            rc.setIndicatorString(String.valueOf(++ind));
+            rc.setIndicatorString(String.valueOf(++ind));
+        if (rc.canSenseRobot(targetID)) {
                 RobotInfo targetInfo = rc.senseRobot(targetID);
                 rc.attack(targetInfo.getLocation()); //TODO: Research, can this do more than one action
-
-            if(zoneNumber == 1) { //in attack zone
-                if(!rc.canSenseRobot(targetID)){ //if target down 
+                rc.setIndicatorString("ind is"  + String.valueOf(++ind));
+            if (zoneNumber == 1) { //in attack zone
+                if (!rc.canSenseRobot(targetID)) { //if target down 
                     RobotInfo[] rInfo = rc.senseNearbyRobots(); //TODO: Possible Optimization
                     int minHP = 500;
                     RobotInfo ri = null;
