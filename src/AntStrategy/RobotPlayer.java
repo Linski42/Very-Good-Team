@@ -88,8 +88,12 @@ public strictfp class RobotPlayer {
         final int unitCount = rc.readSharedArray(15 + (unit * 15)); 
         final MapLocation thisLoc = rc.getLocation();
         int[] eLS = new int[2];  //2 layers of deserialization
+        MapLocation targetLoc = Utility.getMapCenter(rc);
+        RobotType targetType = RobotType.SAGE;
         try{
             eLS = Utility.deserializeRobotLocation(rc.readSharedArray(16+(unit*15)));
+            targetLoc = new MapLocation(eLS[0], eLS[1]);
+            targetType = Utility.robotTypeIntValue(eLS[3]);
         }catch(GameActionException e){
 
         }
@@ -100,20 +104,19 @@ public strictfp class RobotPlayer {
 
         }
         int[] centerDe = new int[]{rc.getMapWidth()/2, rc.getMapHeight()/2};
+        MapLocation centerLoc = Utility.getMapCenter(rc); //location of center for Zone creation
+        boolean hasCenter = true;
         try{
             centerDe = Utility.deserializeMapLocation(rc.readSharedArray(18+(unit * 15)));
-        }catch(GameActionException e){ }
-
-        final MapLocation targetLoc = new MapLocation(eLS[0], eLS[1]);
-        final RobotType targetType = Utility.robotTypeIntValue(eLS[3]);
-        final int targetVision = Utility.getActionRadiusSquared(targetType, 0);
-        final MapLocation centerLoc = new MapLocation(centerDe[0], centerDe[1]); //location of center for Zone creation
-
+            centerLoc = new MapLocation(centerDe[0], centerDe[1]); //location of center for Zone creation
+        }catch(GameActionException e){
+            hasCenter = false;
+         }
+        final int targetVision = 6;
         Zone zone = new Zone(rc, targetLoc, centerLoc, targetVision, unitCount);
-
         final int zoneNumber = zone.getZone(thisLoc);
         MapLocation desiredPos = centerLoc;
-
+        if(hasCenter){
         if(rc.canSenseRobot(targetID)){
                 RobotInfo targetInfo = rc.senseRobot(targetID);
                 rc.attack(targetInfo.getLocation()); //TODO: Research, can this do more than one action
@@ -168,10 +171,17 @@ public strictfp class RobotPlayer {
             }
 
         }
-        if(rc.canMove(thisLoc.directionTo(desiredPos))){
-            rc.move(thisLoc.directionTo(desiredPos));
+            if(rc.canMove(thisLoc.directionTo(desiredPos))){
+                rc.move(thisLoc.directionTo(desiredPos));
+            }else{
+                rc.move(dijik.getBestDirection(desiredPos, thisLoc.directionTo(desiredPos)));
+            }
         }else{
-            rc.move(dijik.getBestDirection(desiredPos, thisLoc.directionTo(desiredPos)));
+            if(rc.canMove(thisLoc.directionTo(centerLoc))){
+                rc.move(thisLoc.directionTo(centerLoc));
+            }else{
+                rc.move(dijik.getBestDirection(centerLoc, thisLoc.directionTo(centerLoc)));
+            }
         }
     }
 
@@ -346,9 +356,11 @@ public strictfp class RobotPlayer {
             final RobotInfo[] nearbyList = rc.senseNearbyRobots();
             RobotInfo t = null;
             LinkedList<MapLocation> blockedLocations = new LinkedList<MapLocation>();
+            int hp = 0;
             for (int i = 0; i < nearbyList.length; i++) {
                 if(nearbyList[i].getType() == RobotType.LABORATORY && nearbyList[i].getHealth() < 100){
-                    if(rc.canRepair(nearbyList[i].getLocation())){
+                    if(rc.canRepair(nearbyList[i].getLocation()) && nearbyList[i].getHealth() > hp){
+                        hp = nearbyList[i].getHealth();
                         t = nearbyList[i];
                     }
                 }
